@@ -1,0 +1,69 @@
+services:
+  user-db:
+    image: postgres:16
+    container_name: user-db
+    environment:
+      POSTGRES_USER: user_service
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: user_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user_service -d user_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  order-db:
+    image: postgres:16
+    container_name: order-db
+    environment:
+      POSTGRES_USER: order_service
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: order_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - order_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U order_service -d order_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  payment-db:
+    image: postgres:16
+    container_name: payment-db
+    environment:
+      POSTGRES_USER: payment_service
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: payment_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - payment_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payment_service -d payment_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  dynamodb-local:
+    image: amazon/dynamodb-local
+    container_name: dynamodb-local
+    command: "-jar DynamoDBLocal.jar -sharedDb"
+    ports:
+      - "8000:8000"
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  user_db_data:
+  order_db_data:
+  payment_db_data:
