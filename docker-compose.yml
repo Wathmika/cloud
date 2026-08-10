@@ -63,7 +63,21 @@ services:
     ports:
       - "6379:6379"
 
+  user-service:
+    build: ./services/user-service
+    container_name: user-service
+    ports:
+      - "8001:8000"
+    environment:
+      DATABASE_URL: postgresql://user_service:devpassword@user-db:5432/user_db
+    volumes:
+      - ./services/user-service/keys:/app/keys
+    depends_on:
+      user-db:
+        condition: service_healthy
+
 volumes:
   user_db_data:
   order_db_data:
   payment_db_data:
+

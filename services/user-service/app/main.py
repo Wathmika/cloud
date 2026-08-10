@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db, create_tables
 from app import models, schemas, auth
+from app.dependencies import get_current_user, require_role
 
 app = FastAPI(title="User Management Service")
 
@@ -35,3 +36,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
     token = auth.create_access_token(user.id, user.role)
     return schemas.Token(access_token=token)
+
+@app.get("/api/v1/users/me")
+def read_me(current_user: dict = Depends(get_current_user)):
+    return current_user
+
+@app.get("/api/v1/users", dependencies=[Depends(require_role("admin"))])
+def list_users(db: Session = Depends(get_db)):
+    return db.query(models.User).all()
