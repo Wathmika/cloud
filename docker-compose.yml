@@ -53,9 +53,11 @@ services:
   dynamodb-local:
     image: amazon/dynamodb-local
     container_name: dynamodb-local
-    command: "-jar DynamoDBLocal.jar -sharedDb"
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal"
     ports:
       - "8000:8000"
+    volumes:
+      - dynamodb_data:/home/dynamodblocal
 
   redis:
     image: redis:7-alpine
@@ -80,4 +82,5 @@ volumes:
   user_db_data:
   order_db_data:
   payment_db_data:
+  dynamodb_data:
 

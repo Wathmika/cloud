@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+boto3
+redis
+pydantic-settings
+python-jose[cryptography]
+python-multipart
