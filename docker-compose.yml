@@ -103,6 +103,19 @@ services:
       - ./services/inventory-service/keys:/app/keys
     depends_on:
       - dynamodb-local
+
+  payment-service:
+    build: ./services/payment-service
+    container_name: payment-service
+    ports:
+      - "8004:8000"
+    environment:
+      DATABASE_URL: postgresql://payment_service:devpassword@payment-db:5432/payment_db
+    volumes:
+      - ./services/payment-service/keys:/app/keys
+    depends_on:
+      payment-db:
+        condition: service_healthy
       
 volumes:
   user_db_data:
