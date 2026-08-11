@@ -34,7 +34,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     if not user or not auth.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
 
-    token = auth.create_access_token(user.id, user.role)
+    token = auth.create_access_token(user.id, user.role, user.email)
     return schemas.Token(access_token=token)
 
 @app.get("/api/v1/users/me")

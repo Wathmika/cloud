@@ -16,10 +16,10 @@ def _load_key(path: str) -> str:
     with open(path, "r") as f:
         return f.read()
 
-def create_access_token(user_id: int, role: str) -> str:
+def create_access_token(user_id: int, role: str, email: str) -> str:
     private_key = _load_key(settings.jwt_private_key_path)
     expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
-    payload = {"sub": str(user_id), "role": role, "exp": expire}
+    payload = {"sub": str(user_id), "role": role, "email": email, "exp": expire}
     return jwt.encode(payload, private_key, algorithm=settings.jwt_algorithm)
 
 def decode_access_token(token: str) -> dict:

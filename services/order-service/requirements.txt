@@ -1,7 +1,8 @@
 fastapi
 uvicorn[standard]
-boto3
+sqlalchemy
+psycopg2-binary
 pydantic-settings
 python-jose[cryptography]
 python-multipart
-botocore
+httpx
