@@ -2,12 +2,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     dynamodb_endpoint: str = "http://localhost:8000"
-    aws_region: str = "us-west-1"
+    aws_region: str = "eu-west-1"
     aws_access_key_id: str = "local"
     aws_secret_access_key: str = "local"
-    products_table_name: str = "Products"
-    redis_host: str = "localhost"
-    redis_port: int = 6379
+    inventory_table_name: str = "Inventory"
     jwt_public_key_path: str = "keys/public.pem"
     jwt_algorithm: str = "RS256"
 

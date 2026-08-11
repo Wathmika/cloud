@@ -78,6 +78,32 @@ services:
       user-db:
         condition: service_healthy
 
+  product-service:
+    build: ./services/product-service
+    container_name: product-service
+    ports:
+      - "8002:8000"
+    environment:
+      DYNAMODB_ENDPOINT: http://dynamodb-local:8000
+      REDIS_HOST: redis
+    volumes:
+      - ./services/product-service/keys:/app/keys
+    depends_on:
+      - dynamodb-local
+      - redis
+
+  inventory-service:
+    build: ./services/inventory-service
+    container_name: inventory-service
+    ports:
+      - "8003:8000"
+    environment:
+      DYNAMODB_ENDPOINT: http://dynamodb-local:8000
+    volumes:
+      - ./services/inventory-service/keys:/app/keys
+    depends_on:
+      - dynamodb-local
+      
 volumes:
   user_db_data:
   order_db_data:
