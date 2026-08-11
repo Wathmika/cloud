@@ -116,6 +116,12 @@ services:
     depends_on:
       payment-db:
         condition: service_healthy
+
+  notification-service:
+    build: ./services/notification-service
+    container_name: notification-service
+    ports:
+      - "8006:8000"
       
 volumes:
   user_db_data:
