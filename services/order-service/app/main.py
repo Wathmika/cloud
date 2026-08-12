@@ -12,6 +12,15 @@ from app.dependencies import get_current_user
 from app.config import settings
 
 app = FastAPI(title="Order Processing Service")
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.on_event("startup")
 def on_startup():
@@ -90,5 +99,18 @@ def create_order(order: schemas.OrderCreate, db: Session = Depends(get_db),
         pass  # best-effort — order already succeeded, notification failure shouldn't block the response
 
     return new_order
+
+@app.get("/api/v1/orders", response_model=list[schemas.OrderResponse])
+def list_my_orders(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    return db.query(models.Order).filter(models.Order.user_id == current_user["sub"]).all()
+
+@app.get("/api/v1/orders/{order_id}", response_model=schemas.OrderResponse)
+def get_order(order_id: int, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    order = db.query(models.Order).filter(models.Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order.user_id != current_user["sub"] and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to view this order")
+    return order
 
     

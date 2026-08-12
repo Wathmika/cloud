@@ -3,6 +3,15 @@ from fastapi import FastAPI
 from app import schemas
 
 app = FastAPI(title="Notification Service")
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.post("/api/v1/notifications/order-placed", response_model=schemas.NotificationResponse)
 def notify_order_placed(event: schemas.OrderPlacedEvent):
