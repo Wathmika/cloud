@@ -2,7 +2,11 @@ from jose import jwt
 
 from app.config import settings
 
+import os
+
 def decode_access_token(token: str) -> dict:
-    with open(settings.jwt_public_key_path, "r") as f:
-        public_key = f.read()
+    public_key = os.environ.get("JWT_PUBLIC_KEY")
+    if not public_key:
+        with open(settings.jwt_public_key_path, "r") as f:
+            public_key = f.read()
     return jwt.decode(token, public_key, algorithms=[settings.jwt_algorithm])

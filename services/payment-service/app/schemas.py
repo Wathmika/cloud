@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 class PaymentCreate(BaseModel):
     order_id: str
     amount: float = Field(gt=0)
-    currency: str = "GBP"
+    currency: str = "LKR"
 
 class PaymentResponse(BaseModel):
     id: int

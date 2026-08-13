@@ -30,7 +30,7 @@ export default function Orders() {
                   <td>#{o.id}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{o.product_id.slice(0, 8)}…</td>
                   <td>{o.quantity}</td>
-                  <td>£{o.total_amount}</td>
+                  <td>Rs.{o.total_amount}</td>
                   <td><span className={`badge badge-${o.status}`}>{o.status}</span></td>
                   <td>{new Date(o.created_at).toLocaleString()}</td>
                 </tr>

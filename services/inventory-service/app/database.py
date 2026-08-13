@@ -2,13 +2,16 @@ import boto3
 
 from app.config import settings
 
-dynamodb = boto3.resource(
-    "dynamodb",
-    endpoint_url=settings.dynamodb_endpoint,
-    region_name=settings.aws_region,
-    aws_access_key_id=settings.aws_access_key_id,
-    aws_secret_access_key=settings.aws_secret_access_key,
-)
+if settings.dynamodb_endpoint:
+    dynamodb = boto3.resource(
+        "dynamodb",
+        endpoint_url=settings.dynamodb_endpoint,
+        region_name=settings.aws_region,
+        aws_access_key_id=settings.aws_access_key_id,
+        aws_secret_access_key=settings.aws_secret_access_key,
+    )
+else:
+    dynamodb = boto3.resource("dynamodb", region_name=settings.aws_region)
 
 def create_table():
     existing = [t.name for t in dynamodb.tables.all()]

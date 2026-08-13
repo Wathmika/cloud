@@ -28,7 +28,7 @@ export default function Products() {
           <Link key={p.product_id} to={`/products/${p.product_id}`} className="product-card">
             <span className="category">{p.category}</span>
             <h3>{p.name}</h3>
-            <span className="price">£{p.price}</span>
+            <span className="price">Rs.{p.price}</span>
           </Link>
         ))}
       </div>

@@ -92,7 +92,7 @@ export default function AdminProducts() {
               <tr key={p.product_id}>
                 <td>{p.name}</td>
                 <td>{p.category}</td>
-                <td>£{p.price}</td>
+                <td>Rs.{p.price}</td>
                 <td className="row">
                   <button className="btn-outline btn btn-sm" onClick={() => startEdit(p)}>Edit</button>
                   <button className="btn-danger btn btn-sm" onClick={() => handleDelete(p.product_id)}>Delete</button>

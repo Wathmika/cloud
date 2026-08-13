@@ -53,7 +53,7 @@ export default function Cart() {
               <tr key={item.product.product_id}>
                 <td>{item.product.name}</td>
                 <td>{item.quantity}</td>
-                <td>£{(item.product.price * item.quantity).toFixed(2)}</td>
+                <td>Rs.{(item.product.price * item.quantity).toFixed(2)}</td>
                 <td>
                   <button className="btn-outline btn btn-sm" onClick={() => removeFromCart(item.product.product_id)}>
                     Remove
@@ -64,7 +64,7 @@ export default function Cart() {
           </tbody>
         </table>
         <div className="row-between" style={{ marginTop: 20 }}>
-          <strong>Total: £{total.toFixed(2)}</strong>
+          <strong>Total: Rs.{total.toFixed(2)}</strong>
           <button className="btn" onClick={handleCheckout} disabled={placing}>
             {placing ? 'Placing order…' : 'Checkout'}
           </button>

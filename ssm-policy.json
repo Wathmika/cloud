@@ -1,0 +1,1 @@
+{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["ssm:GetParameters"],"Resource":["arn:aws:ssm:ap-south-1:961776040849:parameter/smartretailx/jwt/private-key","arn:aws:ssm:ap-south-1:961776040849:parameter/smartretailx/jwt/public-key"]},{"Effect":"Allow","Action":["kms:Decrypt"],"Resource":"*"}]}

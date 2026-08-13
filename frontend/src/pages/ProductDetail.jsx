@@ -32,7 +32,7 @@ export default function ProductDetail() {
         <span className="category">{product.category}</span>
         <h1>{product.name}</h1>
         <p style={{ color: 'var(--text-muted)' }}>{product.description}</p>
-        <p className="price" style={{ fontSize: 24 }}>£{product.price}</p>
+        <p className="price" style={{ fontSize: 24 }}>Rs.{product.price}</p>
 
         <div className="row" style={{ marginTop: 16 }}>
           <input
