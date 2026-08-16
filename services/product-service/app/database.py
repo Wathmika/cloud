@@ -30,3 +30,16 @@ def create_table():
 
 def get_products_table():
     return dynamodb.Table(settings.products_table_name)
+
+def create_promotions_table():
+    existing = [t.name for t in dynamodb.tables.all()]
+    if "Promotions" not in existing:
+        dynamodb.create_table(
+            TableName="Promotions",
+            KeySchema=[{"AttributeName": "product_id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "product_id", "AttributeType": "S"}],
+            BillingMode="PAY_PER_REQUEST",
+        )
+
+def get_promotions_table():
+    return dynamodb.Table("Promotions")

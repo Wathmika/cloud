@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
+import NotificationBell from './NotificationBell'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
@@ -16,6 +17,8 @@ export default function Navbar() {
         {user && <Link to="/orders">My Orders</Link>}
         {user?.role === 'admin' && <Link to="/admin/products">Manage Products</Link>}
         {user?.role === 'admin' && <Link to="/admin/inventory">Manage Inventory</Link>}
+        {user?.role === 'admin' && <Link to="/admin/orders">All Orders</Link>}
+        {user && <NotificationBell />}
         {user ? (
           <button
             className="btn-outline btn btn-sm"

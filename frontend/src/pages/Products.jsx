@@ -28,7 +28,17 @@ export default function Products() {
           <Link key={p.product_id} to={`/products/${p.product_id}`} className="product-card">
             <span className="category">{p.category}</span>
             <h3>{p.name}</h3>
-            <span className="price">Rs.{p.price}</span>
+            {p.discount_percentage ? (
+              <div>
+                <span style={{ textDecoration: 'line-through', color: 'var(--text-muted)', fontSize: 13 }}>
+                  Rs. {p.original_price}
+                </span>{' '}
+                <span className="price">Rs. {p.price}</span>{' '}
+                <span className="badge badge-confirmed">-{p.discount_percentage}%</span>
+              </div>
+            ) : (
+              <span className="price">Rs. {p.price}</span>
+            )}
           </Link>
         ))}
       </div>

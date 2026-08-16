@@ -32,7 +32,18 @@ export default function ProductDetail() {
         <span className="category">{product.category}</span>
         <h1>{product.name}</h1>
         <p style={{ color: 'var(--text-muted)' }}>{product.description}</p>
-        <p className="price" style={{ fontSize: 24 }}>Rs.{product.price}</p>
+
+        {product.discount_percentage ? (
+          <div>
+            <span style={{ textDecoration: 'line-through', color: 'var(--text-muted)', fontSize: 16 }}>
+              Rs. {product.original_price}
+            </span>{' '}
+            <span className="price" style={{ fontSize: 24 }}>Rs. {product.price}</span>{' '}
+            <span className="badge badge-confirmed">-{product.discount_percentage}% OFF</span>
+          </div>
+        ) : (
+          <p className="price" style={{ fontSize: 24 }}>Rs. {product.price}</p>
+        )}
 
         <div className="row" style={{ marginTop: 16 }}>
           <input

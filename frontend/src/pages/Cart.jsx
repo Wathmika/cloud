@@ -1,34 +1,9 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { orderApi } from '../api/client'
 import { useCart } from '../context/CartContext'
 
 export default function Cart() {
-  const { items, removeFromCart, clearCart, total } = useCart()
-  const [error, setError] = useState('')
-  const [placing, setPlacing] = useState(false)
+  const { items, removeFromCart, total } = useCart()
   const navigate = useNavigate()
-
-  async function handleCheckout() {
-    setError('')
-    setPlacing(true)
-    try {
-      // Order Processing accepts one product per order, so checkout
-      // places one order per cart line, sequentially.
-      for (const item of items) {
-        await orderApi.post('/api/v1/orders', {
-          product_id: item.product.product_id,
-          quantity: item.quantity,
-        })
-      }
-      clearCart()
-      navigate('/orders')
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Checkout failed for one or more items')
-    } finally {
-      setPlacing(false)
-    }
-  }
 
   if (items.length === 0) {
     return (
@@ -42,7 +17,6 @@ export default function Cart() {
   return (
     <div className="container">
       <h1>Cart</h1>
-      {error && <div className="alert alert-error">{error}</div>}
       <div className="card">
         <table>
           <thead>
@@ -53,7 +27,7 @@ export default function Cart() {
               <tr key={item.product.product_id}>
                 <td>{item.product.name}</td>
                 <td>{item.quantity}</td>
-                <td>Rs.{(item.product.price * item.quantity).toFixed(2)}</td>
+                <td>Rs. {(item.product.price * item.quantity).toFixed(2)}</td>
                 <td>
                   <button className="btn-outline btn btn-sm" onClick={() => removeFromCart(item.product.product_id)}>
                     Remove
@@ -64,9 +38,9 @@ export default function Cart() {
           </tbody>
         </table>
         <div className="row-between" style={{ marginTop: 20 }}>
-          <strong>Total: Rs.{total.toFixed(2)}</strong>
-          <button className="btn" onClick={handleCheckout} disabled={placing}>
-            {placing ? 'Placing order…' : 'Checkout'}
+          <strong>Total: Rs. {total.toFixed(2)}</strong>
+          <button className="btn" onClick={() => navigate('/payment')}>
+            Proceed to Payment
           </button>
         </div>
       </div>

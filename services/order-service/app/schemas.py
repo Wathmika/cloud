@@ -14,6 +14,19 @@ class OrderResponse(BaseModel):
     payment_token: str | None
     status: str
     created_at: datetime
+    tracking_number: str | None
+
+    class Config:
+        from_attributes = True
+
+class StatusUpdate(BaseModel):
+    status: str
+
+class NotificationOut(BaseModel):
+    id: int
+    message: str
+    is_read: bool
+    created_at: datetime
 
     class Config:
         from_attributes = True

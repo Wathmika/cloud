@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     jwt_public_key_path: str = "keys/public.pem"
     jwt_algorithm: str = "RS256"
 
+    user_service_url: str = "http://localhost:8001"
     product_service_url: str = "http://localhost:8002"
     inventory_service_url: str = "http://localhost:8003"
     payment_service_url: str = "http://localhost:8004"

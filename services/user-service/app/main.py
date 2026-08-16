@@ -11,8 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -53,3 +52,8 @@ def read_me(current_user: dict = Depends(get_current_user)):
 @app.get("/api/v1/users", dependencies=[Depends(require_role("admin"))])
 def list_users(db: Session = Depends(get_db)):
     return db.query(models.User).all()
+
+@app.get("/api/v1/users/admin-ids")
+def get_admin_ids(db: Session = Depends(get_db)):
+    admins = db.query(models.User).filter(models.User.role == "admin").all()
+    return [{"id": a.id} for a in admins]

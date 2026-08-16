@@ -12,6 +12,8 @@ import Cart from './pages/Cart'
 import Orders from './pages/Orders'
 import AdminProducts from './pages/AdminProducts'
 import AdminInventory from './pages/AdminInventory'
+import AdminOrders from './pages/AdminOrders'
+import Payment from './pages/Payment'
 
 export default function App() {
   return (
@@ -28,6 +30,8 @@ export default function App() {
           <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
           <Route path="/admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />
           <Route path="/admin/inventory" element={<AdminRoute><AdminInventory /></AdminRoute>} />
+          <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
+          <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
         </Routes>
       </CartProvider>
     </AuthProvider>

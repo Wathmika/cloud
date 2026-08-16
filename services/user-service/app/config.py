@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     jwt_public_key_path: str = "keys/public.pem"
     jwt_algorithm: str = "RS256"
     access_token_expire_minutes: int = 60
+    user_service_url: str = "http://localhost:8001"
 
     model_config = SettingsConfigDict(env_file=".env")
 

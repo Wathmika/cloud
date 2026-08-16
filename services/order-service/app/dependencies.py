@@ -11,3 +11,10 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_
         return auth.decode_access_token(credentials.credentials)
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+def require_role(*allowed_roles):
+    def checker(user: dict = Depends(get_current_user)):
+        if user["role"] not in allowed_roles:
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
+        return user
+    return checker

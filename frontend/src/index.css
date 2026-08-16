@@ -188,3 +188,18 @@ h1 { font-size: 26px; letter-spacing: -0.02em; margin-bottom: 4px; }
 
 .row { display: flex; align-items: center; gap: 12px; }
 .row-between { display: flex; align-items: center; justify-content: space-between; }
+
+.badge-packed {
+  background: #E0E7FF;
+  color: #4338CA;
+}
+
+.badge-shipped {
+  background: #DBEAFE;
+  color: #1D4ED8;
+}
+
+.badge-delivered {
+  background: var(--success-bg);
+  color: var(--success);
+}

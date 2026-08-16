@@ -1,5 +1,5 @@
 from decimal import Decimal
-
+import boto3
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 import httpx
@@ -8,8 +8,9 @@ from app.dependencies import get_current_user, bearer_scheme
 
 from app.database import get_db, create_tables
 from app import models, schemas
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, require_role
 from app.config import settings
+
 
 app = FastAPI(title="Order Processing Service")
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,8 +20,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -90,6 +90,18 @@ def create_order(order: schemas.OrderCreate, db: Session = Depends(get_db),
     db.refresh(new_order)
 
     try:
+        admin_resp = httpx.get(f"{settings.user_service_url}/api/v1/users/admin-ids", timeout=5)
+        if admin_resp.status_code == 200:
+            for admin in admin_resp.json():
+                db.add(models.Notification(
+                    user_id=str(admin["id"]),
+                    message=f"New order #{new_order.id} placed — needs processing.",
+                ))
+            db.commit()
+    except httpx.RequestError as e:
+        print(f"[WARNING] Could not notify admins for order {new_order.id}: {e}")
+
+    try:
         reserve_resp = call_reserve_stock(order.product_id, order.quantity, credentials.credentials)
     except pybreaker.CircuitBreakerError:
         new_order.status = "cancelled"; db.commit()
@@ -134,10 +146,23 @@ def create_order(order: schemas.OrderCreate, db: Session = Depends(get_db),
     db.refresh(new_order)
 
     try:
-        httpx.post(f"{settings.notification_service_url}/api/v1/notifications/order-placed",
-                   json={"order_id": str(new_order.id), "customer_email": current_user["email"]})
-    except httpx.RequestError:
-        print(f"[WARNING] Notification failed for order {new_order.id} — service unreachable")
+        sns = boto3.client("sns", region_name="ap-south-1")
+        sns.publish(
+            TopicArn="arn:aws:sns:ap-south-1:961776040849:smartretailx-order-events",
+            Message=f'{{"order_id": "{new_order.id}", "customer_email": "{current_user["email"]}"}}',
+        )
+    except Exception as e:
+        # Local dev has no AWS credentials, so SNS publish fails by design here —
+        # fall back to calling Notification directly over the docker-compose network.
+        print(f"[INFO] SNS publish unavailable ({e}), falling back to direct call")
+        try:
+            httpx.post(
+                f"{settings.notification_service_url}/api/v1/notifications/order-placed",
+                json={"order_id": str(new_order.id), "customer_email": current_user["email"]},
+                timeout=5,
+            )
+        except httpx.RequestError as fallback_error:
+            print(f"[WARNING] Notification fallback also failed: {fallback_error}")
 
     return new_order
 
@@ -154,6 +179,12 @@ def breaker_status():
 def list_my_orders(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     return db.query(models.Order).filter(models.Order.user_id == current_user["sub"]).all()
 
+VALID_STATUSES = ["confirmed", "packed", "shipped", "delivered", "cancelled"]
+
+@app.get("/api/v1/orders/all", response_model=list[schemas.OrderResponse])
+def list_all_orders(db: Session = Depends(get_db), current_user: dict = Depends(require_role("admin"))):
+    return db.query(models.Order).order_by(models.Order.created_at.desc()).all()
+
 @app.get("/api/v1/orders/{order_id}", response_model=schemas.OrderResponse)
 def get_order(order_id: int, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     order = db.query(models.Order).filter(models.Order.id == order_id).first()
@@ -163,4 +194,45 @@ def get_order(order_id: int, db: Session = Depends(get_db), current_user: dict =
         raise HTTPException(status_code=403, detail="Not authorized to view this order")
     return order
 
+
+@app.patch("/api/v1/orders/{order_id}/status", response_model=schemas.OrderResponse)
+def update_order_status(order_id: int, update: schemas.StatusUpdate, db: Session = Depends(get_db),
+                         current_user: dict = Depends(require_role("admin"))):
+    order = db.query(models.Order).filter(models.Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if update.status not in VALID_STATUSES:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {VALID_STATUSES}")
+    order.status = update.status
+    if update.status == "shipped" and not order.tracking_number:
+        import uuid
+        order.tracking_number = f"TRK-{uuid.uuid4().hex[:10].upper()}"
+    db.commit()
+    db.refresh(order)
+
+    new_notif = models.Notification(
+        user_id=order.user_id,
+        message=f"Your order #{order.id} is now {update.status}.",
+    )
+    db.add(new_notif)
+    db.commit()
+
+    return order
+
+@app.get("/api/v1/notifications", response_model=list[schemas.NotificationOut])
+def get_my_notifications(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    return db.query(models.Notification).filter(
+        models.Notification.user_id == current_user["sub"]
+    ).order_by(models.Notification.created_at.desc()).all()
+
+@app.patch("/api/v1/notifications/{notif_id}/read")
+def mark_notification_read(notif_id: int, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    notif = db.query(models.Notification).filter(
+        models.Notification.id == notif_id, models.Notification.user_id == current_user["sub"]
+    ).first()
+    if not notif:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    notif.is_read = True
+    db.commit()
+    return {"detail": "Marked as read"}
     
