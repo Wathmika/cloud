@@ -9,3 +9,4 @@ httpx
 tenacity
 pybreaker
 boto3
+aws-xray-sdk

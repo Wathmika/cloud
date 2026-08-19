@@ -1,0 +1,4 @@
+{
+    "Arn": "arn:aws:lambda:ap-south-1:961776040849:function:smartretailx-promotion-checker",
+    "RoleArn": "arn:aws:iam::961776040849:role/smartretailx-lambda-role"
+}

@@ -29,6 +29,9 @@ export default function ProductDetail() {
   return (
     <div className="container">
       <div className="card" style={{ maxWidth: 480 }}>
+        {product.image_url && (
+          <img src={product.image_url} alt={product.name} style={{ width: '100%', borderRadius: 8, marginBottom: 12 }} />
+        )}
         <span className="category">{product.category}</span>
         <h1>{product.name}</h1>
         <p style={{ color: 'var(--text-muted)' }}>{product.description}</p>

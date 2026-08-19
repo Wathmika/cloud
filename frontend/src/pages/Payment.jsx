@@ -105,9 +105,6 @@ export default function Payment() {
                         {placing ? 'Processing…' : `Pay Rs. ${total.toFixed(2)}`}
                     </button>
                 </form>
-                <p style={{ marginTop: 16, fontSize: 12, color: 'var(--text-muted)' }}>
-                    This is a simulated payment for demonstration purposes. No real card data is transmitted or stored.
-                </p>
             </div>
         </div>
     )

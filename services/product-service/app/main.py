@@ -55,6 +55,7 @@ def create_product(product: schemas.ProductCreate):
         "description": product.description,
         "price": Decimal(str(product.price)),
         "category": product.category,
+        "image_url": product.image_url,
     }
     table.put_item(Item=item)
     return item
@@ -71,6 +72,7 @@ def update_product(product_id: str, product: schemas.ProductCreate):
         "description": product.description,
         "price": Decimal(str(product.price)),
         "category": product.category,
+        "image_url": product.image_url,
     }
     table.put_item(Item=item)
     return item
@@ -85,9 +87,14 @@ def get_active_discount(product_id: str) -> float | None:
     item = table.get_item(Key={"product_id": product_id}).get("Item")
     if not item:
         return None
-    now = datetime.now()
+    now = datetime.utcnow()
     start = datetime.fromisoformat(item["start_time"])
     end = datetime.fromisoformat(item["end_time"])
+    # Normalize to naive UTC regardless of whether the stored string had timezone info
+    if start.tzinfo is not None:
+        start = start.replace(tzinfo=None)
+    if end.tzinfo is not None:
+        end = end.replace(tzinfo=None)
     if start <= now <= end:
         return float(item["discount_percentage"])
     return None

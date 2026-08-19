@@ -1,0 +1,22 @@
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+export const options = {
+    stages: [
+        { duration: '30s', target: 20 },
+        { duration: '30s', target: 50 },
+        { duration: '2m', target: 50 },
+        { duration: '30s', target: 0 },
+    ],
+};
+
+const BASE_URL = 'https://4kjvzmcuh6.execute-api.ap-south-1.amazonaws.com/prod';
+
+export default function () {
+    const res = http.get(`${BASE_URL}/api/v1/products`);
+    check(res, {
+        'status is 200': (r) => r.status === 200,
+        'response time < 2000ms': (r) => r.timings.duration < 2000,
+    });
+    sleep(0.5);
+}

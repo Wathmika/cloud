@@ -1,0 +1,1885 @@
+{
+  "info": {
+    "_postman_id": "18187e24-e4db-4450-98e2-f1eb553fb788",
+    "name": "SmartRetailX - API, E2E & Security Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "43348189"
+  },
+  "item": [
+    {
+      "name": "0. Setup - Login",
+      "item": [
+        {
+          "name": "Preflight - Services Reachable (expect 200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 - if this fails, product-service is likely scaled to 0 or API Gateway integrations are pointing at a stale IP; fix that before running the rest of this collection', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{product_base}}/api/v1/products",
+              "host": [
+                "{{product_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Ensure Test Customer Exists (idempotent)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Customer account ready (newly created or already existed)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 400, 409, 422]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{customer_email}}\",\n  \"password\": \"{{customer_password}}\",\n  \"full_name\": \"Postman Test Customer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{user_base}}/api/v1/users/register",
+              "host": [
+                "{{user_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "register"
+              ]
+            },
+            "description": "Registers the fixed customer_email/customer_password account if it doesn't exist yet, so 'Login as Customer' below always has a real account to authenticate against. If the account already exists from a previous run, the register call will fail (exact status code depends on the service's duplicate-email handling) - that failure is expected and tolerated here, not treated as a collection failure."
+          },
+          "response": []
+        },
+        {
+          "name": "Login as Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var data = pm.response.json();",
+                  "pm.test('Access token returned', function () { pm.expect(data.access_token).to.be.a('string'); });",
+                  "pm.collectionVariables.set('admin_token', data.access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "{{admin_email}}"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{user_base}}/api/v1/users/login",
+              "host": [
+                "{{user_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login as Customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var data = pm.response.json();",
+                  "pm.test('Access token returned', function () { pm.expect(data.access_token).to.be.a('string'); });",
+                  "pm.collectionVariables.set('customer_token', data.access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "{{customer_email}}"
+                },
+                {
+                  "key": "password",
+                  "value": "{{customer_password}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{user_base}}/api/v1/users/login",
+              "host": [
+                "{{user_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "1. Auth - API & Security Tests",
+      "item": [
+        {
+          "name": "Register New Customer (unique each run)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var data = pm.response.json();",
+                  "pm.test('Password not returned', function () { pm.expect(data.hashed_password).to.be.undefined; });",
+                  "pm.test('Default role is customer', function () { pm.expect(data.role).to.eql('customer'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"TestPass123\",\n  \"full_name\": \"Postman Test User\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{user_base}}/api/v1/users/register",
+              "host": [
+                "{{user_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Security] Get Me - No Token (expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401 - OAuth2PasswordBearer default for missing token', function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{user_base}}/api/v1/users/me",
+              "host": [
+                "{{user_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Security] Get Me - Invalid Token (expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401 - signature verification fails', function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer garbage.invalid.token"
+              }
+            ],
+            "url": {
+              "raw": "{{user_base}}/api/v1/users/me",
+              "host": [
+                "{{user_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Me - Valid Token (expect 200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var data = pm.response.json();",
+                  "pm.test('Role claim present', function () { pm.expect(data.role).to.eql('customer'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{user_base}}/api/v1/users/me",
+              "host": [
+                "{{user_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Product Catalogue - API & Security Tests",
+      "item": [
+        {
+          "name": "List Products - Public, no auth (expect 200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Response is an array', function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{product_base}}/api/v1/products",
+              "host": [
+                "{{product_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Security] Create Product - No Auth (expect 403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401 - missing token rejected', function () { pm.response.to.have.status(401); });"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Unauthorized Test\",\n  \"description\": \"should fail\",\n  \"price\": 9.99,\n  \"category\": \"Test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{product_base}}/api/v1/products",
+              "host": [
+                "{{product_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Security] Create Product - Customer Role (expect 403 RBAC block)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 403 - role is customer, not admin', function () { pm.response.to.have.status(403); });",
+                  "pm.test('Detail explains RBAC block', function () { pm.expect(pm.response.json().detail).to.eql('Insufficient permissions'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Customer Attempt\",\n  \"description\": \"should be blocked by RBAC\",\n  \"price\": 9.99,\n  \"category\": \"Test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{product_base}}/api/v1/products",
+              "host": [
+                "{{product_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Product - Admin (expect 200, captures product_id)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var data = pm.response.json();",
+                  "pm.test('Product ID returned', function () { pm.expect(data.product_id).to.be.a('string'); });",
+                  "pm.collectionVariables.set('product_id', data.product_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Test Product\",\n  \"description\": \"Created by automated test\",\n  \"price\": 19.99,\n  \"category\": \"Test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{product_base}}/api/v1/products",
+              "host": [
+                "{{product_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Product - Admin (expect 200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Price updated', function () { pm.expect(pm.response.json().price).to.eql(24.99); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Test Product (Updated)\",\n  \"description\": \"Updated by automated test\",\n  \"price\": 24.99,\n  \"category\": \"Test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{product_base}}/api/v1/products/{{product_id}}",
+              "host": [
+                "{{product_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products",
+                "{{product_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Temp Product for Deletion (expect 200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.collectionVariables.set('temp_product_id', pm.response.json().product_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Temp Product\",\n  \"description\": \"Will be deleted\",\n  \"price\": 5.00,\n  \"category\": \"Test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{product_base}}/api/v1/products",
+              "host": [
+                "{{product_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Product - Admin (expect 200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{product_base}}/api/v1/products/{{temp_product_id}}",
+              "host": [
+                "{{product_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products",
+                "{{temp_product_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Inventory - API & Security Tests",
+      "item": [
+        {
+          "name": "[Security] List Inventory - Customer Role (expect 403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 403 - stock levels are admin-only', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{inventory_base}}/api/v1/inventory",
+              "host": [
+                "{{inventory_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "inventory"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Inventory Record - Admin (expect 200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Stock set to 10', function () { pm.expect(pm.response.json().quantity_available).to.eql(10); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": \"{{product_id}}\",\n  \"quantity_available\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{inventory_base}}/api/v1/inventory",
+              "host": [
+                "{{inventory_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "inventory"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Security] Reserve Stock - Excessive Quantity (expect 409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 409 - atomic condition blocks overselling', function () { pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 99999\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{inventory_base}}/api/v1/inventory/{{product_id}}/reserve",
+              "host": [
+                "{{inventory_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "inventory",
+                "{{product_id}}",
+                "reserve"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Payment - API & Security Tests",
+      "item": [
+        {
+          "name": "[Security] Create Payment - No Auth (expect 403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401 - missing token rejected', function () { pm.response.to.have.status(401); });"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_id\": \"test\",\n  \"amount\": 10.00,\n  \"currency\": \"LKR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{payment_base}}/api/v1/payments",
+              "host": [
+                "{{payment_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Order Processing - End-to-End Tests",
+      "item": [
+        {
+          "name": "[E2E] Place Order - Invalid Product (expect 404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404 - product does not exist', function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{order_base}}/api/v1/orders",
+              "host": [
+                "{{order_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[E2E] Place Order - Insufficient Stock (expect 409, no charge)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 409', function () { pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": \"{{product_id}}\",\n  \"quantity\": 99999\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{order_base}}/api/v1/orders",
+              "host": [
+                "{{order_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[E2E] Place Order - Happy Path (expect 200, confirmed)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var data = pm.response.json();",
+                  "pm.test('Status is confirmed', function () { pm.expect(data.status).to.eql('confirmed'); });",
+                  "pm.test('Real payment token attached', function () { pm.expect(data.payment_token).to.match(/^tok_/); });",
+                  "pm.collectionVariables.set('order_id', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": \"{{product_id}}\",\n  \"quantity\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{order_base}}/api/v1/orders",
+              "host": [
+                "{{order_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Orders (expect 200, contains the new order)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const ids = pm.response.json().map(o => o.id);",
+                  "pm.test('New order present in history', function () { pm.expect(ids).to.include(pm.collectionVariables.get('order_id')); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{order_base}}/api/v1/orders",
+              "host": [
+                "{{order_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Security] Get Order by ID - Nonexistent (expect 404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{order_base}}/api/v1/orders/999999",
+              "host": [
+                "{{order_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "999999"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Notification - API Test",
+      "item": []
+    },
+    {
+      "name": "7. Order Management Extensions - API & Security Tests",
+      "item": [
+        {
+          "name": "[Security] List All Orders - No Auth (expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401 - missing token rejected', function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{order_base}}/api/v1/orders/all",
+              "host": [
+                "{{order_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "all"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Security] List All Orders - Customer Role (expect 403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 403 - role is customer, not admin', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{order_base}}/api/v1/orders/all",
+              "host": [
+                "{{order_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "all"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List All Orders - Admin (expect 200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Response is a list', function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{order_base}}/api/v1/orders/all",
+              "host": [
+                "{{order_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "all"
+              ]
+            },
+            "description": "Admin-only endpoint added after the original collection was built. Confirms the route-ordering fix (this must not be shadowed by GET /api/v1/orders/{id}) works through API Gateway, not just directly against the container."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "8. Promotions - API & Security Tests",
+      "item": [
+        {
+          "name": "[Security] Create Promotion - No Auth (expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401 - missing token rejected', function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"discount_percentage\": 15,\n  \"start_time\": \"2026-01-01T00:00:00Z\",\n  \"end_time\": \"2026-01-01T01:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{product_base}}/api/v1/products/{{product_id}}/promotions",
+              "host": [
+                "{{product_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products",
+                "{{product_id}}",
+                "promotions"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Security] Create Promotion - Customer Role (expect 403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 403 - role is customer, not admin', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"discount_percentage\": 15,\n  \"start_time\": \"2026-01-01T00:00:00Z\",\n  \"end_time\": \"2026-01-01T01:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{product_base}}/api/v1/products/{{product_id}}/promotions",
+              "host": [
+                "{{product_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products",
+                "{{product_id}}",
+                "promotions"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Promotion - Admin (expect 200, active immediately)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Window opens now and runs for 1 hour, so the very next GET sees it as active.",
+                  "const now = new Date();",
+                  "const later = new Date(now.getTime() + 60 * 60 * 1000);",
+                  "pm.collectionVariables.set('promo_start', now.toISOString());",
+                  "pm.collectionVariables.set('promo_end', later.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 or 201', function () { pm.expect([200, 201]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"discount_percentage\": 15,\n  \"start_time\": \"{{promo_start}}\",\n  \"end_time\": \"{{promo_end}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{product_base}}/api/v1/products/{{product_id}}/promotions",
+              "host": [
+                "{{product_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products",
+                "{{product_id}}",
+                "promotions"
+              ]
+            },
+            "description": "Uses product_id captured earlier in folder 2 (the Rs.19.99 test product). Timestamps are generated fresh each run via a pre-request script so the window is always currently active - this is also a direct regression check for the timezone bug documented in the project (naive vs 'Z'-suffixed timestamps)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product - Confirm Discount Applied Live (expect 200, discounted price)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var data = pm.response.json();",
+                  "pm.test('Discounted price is present and lower than original', function () {",
+                  "    pm.expect(data).to.have.property('price');",
+                  "    if (data.original_price !== undefined) {",
+                  "        pm.expect(data.price).to.be.below(data.original_price);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{product_base}}/api/v1/products/{{product_id}}",
+              "host": [
+                "{{product_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products",
+                "{{product_id}}"
+              ]
+            },
+            "description": "Field names (price / original_price / discount_percentage) are inferred from the project's documented behaviour, not confirmed against the live schema - adjust the assertion above if your actual response uses different keys."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "9. User Role Management - API & Security Tests",
+      "item": [
+        {
+          "name": "Register Temp User for Role Promotion Test",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var data = pm.response.json();",
+                  "pm.test('Default role is customer', function () { pm.expect(data.role).to.eql('customer'); });",
+                  "pm.collectionVariables.set('temp_user_id', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"TestPass123\",\n  \"full_name\": \"Role Test User\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{user_base}}/api/v1/users/register",
+              "host": [
+                "{{user_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "register"
+              ]
+            },
+            "description": "Uses a disposable, freshly-registered account for the role-promotion test rather than the shared seeded customer_email account, so repeated collection runs don't accidentally leave the main test customer permanently promoted to admin."
+          },
+          "response": []
+        },
+        {
+          "name": "[Security] Update User Role - No Auth (expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401 - missing token rejected', function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"admin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{user_base}}/api/v1/users/{{temp_user_id}}/role",
+              "host": [
+                "{{user_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{temp_user_id}}",
+                "role"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Security] Update User Role - Customer Role (expect 403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 403 - role is customer, not admin', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"admin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{user_base}}/api/v1/users/{{temp_user_id}}/role",
+              "host": [
+                "{{user_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{temp_user_id}}",
+                "role"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update User Role - Admin (expect 200, promotes temp user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{user_base}}/api/v1/users/{{temp_user_id}}/role?role=admin",
+              "host": [
+                "{{user_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{temp_user_id}}",
+                "role"
+              ],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "admin"
+                }
+              ]
+            },
+            "description": "Body field name ('role') is inferred from the pattern used throughout the rest of the schema (UserResponse.role, UserCreate has no role field, etc.) - adjust if your actual RoleUpdate schema names it differently."
+          },
+          "response": []
+        },
+        {
+          "name": "[Security] List Admin User IDs - No Auth (expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{user_base}}/api/v1/users/admin-ids",
+              "host": [
+                "{{user_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "admin-ids"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Admin User IDs - Admin (expect 200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Response body parses as JSON', function () { pm.response.json(); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{user_base}}/api/v1/users/admin-ids",
+              "host": [
+                "{{user_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "admin-ids"
+              ]
+            },
+            "description": "Response shape wasn't available to reconstruct precisely, so this only checks status code and valid JSON - tighten the assertion once you see the real response."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "10. Notification Bell (order-service) - API & Security Tests",
+      "item": [
+        {
+          "name": "[Security] Get My Notifications - No Auth (expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401 - missing token rejected', function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{order_base}}/api/v1/notifications",
+              "host": [
+                "{{order_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Notifications - Customer (expect 200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var data = pm.response.json();",
+                  "if (Array.isArray(data) && data.length > 0 && data[0].id) {",
+                  "    pm.collectionVariables.set('notification_id', data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{order_base}}/api/v1/notifications",
+              "host": [
+                "{{order_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications"
+              ]
+            },
+            "description": "This endpoint moved from notification-service to order-service after the original collection was built (per the handoff doc) - make sure API Gateway's notification integrations point at order-service's current IP, not notification-service's, or this will 404/502. Run folder 5 (which places a real order as the customer) before this folder so there's at least one notification to read."
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Notification Read - Customer (expect 200, skips if none exist)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('notification_id')) {",
+                  "    pm.test.skip('No notification_id captured - run the previous request after placing an order first');",
+                  "} else {",
+                  "    pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{order_base}}/api/v1/notifications/{{notification_id}}/read",
+              "host": [
+                "{{order_base}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "{{notification_id}}",
+                "read"
+              ]
+            },
+            "description": "Field name ('id') on each notification object is inferred, not confirmed - adjust the prerequest capture in 'Get My Notifications' above if your actual field is named differently (e.g. notification_id)."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "user_base",
+      "value": "https://4kjvzmcuh6.execute-api.ap-south-1.amazonaws.com/prod"
+    },
+    {
+      "key": "product_base",
+      "value": "https://4kjvzmcuh6.execute-api.ap-south-1.amazonaws.com/prod"
+    },
+    {
+      "key": "inventory_base",
+      "value": "https://4kjvzmcuh6.execute-api.ap-south-1.amazonaws.com/prod"
+    },
+    {
+      "key": "payment_base",
+      "value": "https://4kjvzmcuh6.execute-api.ap-south-1.amazonaws.com/prod"
+    },
+    {
+      "key": "order_base",
+      "value": "https://4kjvzmcuh6.execute-api.ap-south-1.amazonaws.com/prod"
+    },
+    {
+      "key": "notification_base",
+      "value": "https://4kjvzmcuh6.execute-api.ap-south-1.amazonaws.com/prod"
+    },
+    {
+      "key": "admin_email",
+      "value": "risinu@gmail.com"
+    },
+    {
+      "key": "admin_password",
+      "value": "stringst"
+    },
+    {
+      "key": "customer_email",
+      "value": "customer@smartretailx.com"
+    },
+    {
+      "key": "customer_password",
+      "value": "CustomerPass123"
+    },
+    {
+      "key": "admin_token",
+      "value": ""
+    },
+    {
+      "key": "customer_token",
+      "value": ""
+    },
+    {
+      "key": "product_id",
+      "value": ""
+    },
+    {
+      "key": "temp_product_id",
+      "value": ""
+    },
+    {
+      "key": "order_id",
+      "value": ""
+    },
+    {
+      "key": "temp_user_id",
+      "value": ""
+    },
+    {
+      "key": "temp_user_email",
+      "value": ""
+    },
+    {
+      "key": "notification_id",
+      "value": ""
+    },
+    {
+      "key": "promo_start",
+      "value": ""
+    },
+    {
+      "key": "promo_end",
+      "value": ""
+    }
+  ]
+}

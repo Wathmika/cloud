@@ -14,17 +14,18 @@ export default function Navbar() {
       <nav>
         <Link to="/products">Products</Link>
         {user && <Link to="/cart">Cart ({items.length})</Link>}
-        {user && <Link to="/orders">My Orders</Link>}
-        {user?.role === 'admin' && <Link to="/admin/products">Manage Products</Link>}
-        {user?.role === 'admin' && <Link to="/admin/inventory">Manage Inventory</Link>}
-        {user?.role === 'admin' && <Link to="/admin/orders">All Orders</Link>}
+        {user && <Link to="/orders">My orders</Link>}
+        {user?.role === 'admin' && <Link to="/admin/products">Manage products</Link>}
+        {user?.role === 'admin' && <Link to="/admin/inventory">Manage inventory</Link>}
+        {user?.role === 'admin' && <Link to="/admin/orders">All orders</Link>}
+        {user?.role === 'admin' && <Link to="/admin/users">Manage users</Link>}
         {user && <NotificationBell />}
         {user ? (
           <button
             className="btn-outline btn btn-sm"
             onClick={() => { logout(); navigate('/login') }}
           >
-            Log out ({user.email})
+            Log out
           </button>
         ) : (
           <>

@@ -1,0 +1,160 @@
+{
+    "widgets": [
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 6,
+            "properties": {
+                "title": "ECS CPU Utilization",
+                "metrics": [
+                    [
+                        "AWS/ECS",
+                        "CPUUtilization",
+                        "ClusterName",
+                        "smartretailx-cluster",
+                        "ServiceName",
+                        "order-service"
+                    ],
+                    [
+                        "...",
+                        "product-service"
+                    ],
+                    [
+                        "...",
+                        "user-service"
+                    ]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "ap-south-1",
+                "view": "timeSeries"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 12,
+            "y": 0,
+            "width": 12,
+            "height": 6,
+            "properties": {
+                "title": "ECS Memory Utilization",
+                "metrics": [
+                    [
+                        "AWS/ECS",
+                        "MemoryUtilization",
+                        "ClusterName",
+                        "smartretailx-cluster",
+                        "ServiceName",
+                        "order-service"
+                    ],
+                    [
+                        "...",
+                        "product-service"
+                    ],
+                    [
+                        "...",
+                        "user-service"
+                    ]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "ap-south-1",
+                "view": "timeSeries"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 6,
+            "width": 12,
+            "height": 6,
+            "properties": {
+                "title": "Lambda Notification — Invocations & Errors",
+                "metrics": [
+                    [
+                        "AWS/Lambda",
+                        "Invocations",
+                        "FunctionName",
+                        "smartretailx-notification"
+                    ],
+                    [
+                        "AWS/Lambda",
+                        "Errors",
+                        "FunctionName",
+                        "smartretailx-notification"
+                    ]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "ap-south-1",
+                "view": "timeSeries"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 12,
+            "y": 6,
+            "width": 12,
+            "height": 6,
+            "properties": {
+                "title": "RDS CPU Utilization",
+                "metrics": [
+                    [
+                        "AWS/RDS",
+                        "CPUUtilization",
+                        "DBInstanceIdentifier",
+                        "smartretailx-user-db"
+                    ],
+                    [
+                        "...",
+                        "smartretailx-order-db"
+                    ],
+                    [
+                        "...",
+                        "smartretailx-payment-db"
+                    ]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "ap-south-1",
+                "view": "timeSeries"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 12,
+            "width": 24,
+            "height": 6,
+            "properties": {
+                "title": "API Gateway — Requests & Errors",
+                "metrics": [
+                    [
+                        "AWS/ApiGateway",
+                        "Count",
+                        "ApiId",
+                        "4kjvzmcuh6"
+                    ],
+                    [
+                        "AWS/ApiGateway",
+                        "4xx",
+                        "ApiId",
+                        "4kjvzmcuh6"
+                    ],
+                    [
+                        "AWS/ApiGateway",
+                        "5xx",
+                        "ApiId",
+                        "4kjvzmcuh6"
+                    ]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "ap-south-1",
+                "view": "timeSeries"
+            }
+        }
+    ]
+}

@@ -6,6 +6,7 @@ class ProductCreate(BaseModel):
     description: str
     price: float = Field(gt=0)
     category: str
+    image_url: str | None = None
 
 class ProductResponse(BaseModel):
     product_id: str
@@ -15,6 +16,7 @@ class ProductResponse(BaseModel):
     category: str
     original_price: float | None = None
     discount_percentage: float | None = None
+    image_url: str | None = None
 
 class PromotionCreate(BaseModel):
     discount_percentage: float = Field(gt=0, le=100)

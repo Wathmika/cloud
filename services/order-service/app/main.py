@@ -18,6 +18,35 @@ from fastapi.middleware.cors import CORSMiddleware
 import pybreaker
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
+import logging
+logging.getLogger("aws_xray_sdk").setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
+
+from aws_xray_sdk.core import xray_recorder, patch_all
+from starlette.middleware.base import BaseHTTPMiddleware
+
+patch_all()
+xray_recorder.configure(service="order-service", daemon_address="127.0.0.1:2000")
+
+class XRayMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        print(f"[XRAY] Beginning segment for {request.url.path}")
+        segment = xray_recorder.begin_segment(name="order-service")
+        segment.put_http_meta("url", str(request.url))
+        segment.put_http_meta("method", request.method)
+        try:
+            response = await call_next(request)
+            segment.put_http_meta("status", response.status_code)
+            return response
+        except Exception as e:
+            segment.add_exception(e, [])
+            raise
+        finally:
+            xray_recorder.end_segment()
+            print(f"[XRAY] Ended segment for {request.url.path}")
+
+app.add_middleware(XRayMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

@@ -1,0 +1,94 @@
+{
+    "family": "smartretailx-order-service",
+    "taskRoleArn": "arn:aws:iam::961776040849:role/smartretailx-ecs-task-role",
+    "executionRoleArn": "arn:aws:iam::961776040849:role/smartretailx-ecs-execution-role",
+    "networkMode": "awsvpc",
+    "containerDefinitions": [
+        {
+            "name": "order-service",
+            "image": "961776040849.dkr.ecr.ap-south-1.amazonaws.com/smartretailx/order-service:latest",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "containerPort": 8000,
+                    "hostPort": 8000,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "INVENTORY_SERVICE_URL",
+                    "value": "http://3.108.255.55:8000"
+                },
+                {
+                    "name": "PAYMENT_SERVICE_URL",
+                    "value": "http://13.233.86.153:8000"
+                },
+                {
+                    "name": "NOTIFICATION_SERVICE_URL",
+                    "value": "http://13.200.9.172:8000"
+                },
+                {
+                    "name": "DATABASE_URL",
+                    "value": "postgresql://order_service:stringst@smartretailx-order-db.c508ea4u80ew.ap-south-1.rds.amazonaws.com:5432/order_db"
+                },
+                {
+                    "name": "PRODUCT_SERVICE_URL",
+                    "value": "http://13.202.137.191:8000"
+                },
+                {
+                    "name": "USER_SERVICE_URL",
+                    "value": "http://52.66.111.59:8000"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "secrets": [
+                {
+                    "name": "JWT_PUBLIC_KEY",
+                    "valueFrom": "arn:aws:ssm:ap-south-1:961776040849:parameter/smartretailx/jwt/public-key"
+                }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/smartretailx-order-service",
+                    "awslogs-create-group": "true",
+                    "awslogs-region": "ap-south-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            },
+            "systemControls": []
+        },
+        {
+            "name": "xray-daemon",
+            "image": "amazon/aws-xray-daemon",
+            "cpu": 32,
+            "memoryReservation": 256,
+            "portMappings": [
+                {
+                    "containerPort": 2000,
+                    "protocol": "udp"
+                }
+            ],
+            "essential": false,
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/smartretailx-xray-daemon",
+                    "awslogs-create-group": "true",
+                    "awslogs-region": "ap-south-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
+        }
+    ],
+    "volumes": [],
+    "placementConstraints": [],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "256",
+    "memory": "512"
+}
